@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { argv } from 'node:process'
 
 import { getURL } from '@netlify/edge-functions-bootstrap/version'
-import { execa } from 'execa'
+import { x } from 'tinyexec';
 import { defineConfig } from 'tsup'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -58,11 +58,13 @@ export default defineConfig([
       // We need to bundle the bootstrap layer with the package because Deno
       // does not support HTTP imports when inside a `node_modukes` directory.
       const distBootstrapPath = path.resolve(distPath, 'deno', BOOTSTRAP_FILENAME)
-      await execa(
+      await x(
         'deno',
         ['run', '--allow-all', '--no-lock', 'bootstrap-bundle.mjs', bootstrapURL, distBootstrapPath],
         {
-          stdio: 'inherit',
+          nodeOptions: {
+            stdio: 'inherit',
+          }
         },
       )
 

@@ -1,4 +1,4 @@
-import { execaCommand as run } from 'execa'
+import { x as run } from 'tinyexec'
 import pkg from '../package.json' with { type: 'json' }
 import { createInterface } from 'node:readline'
 
@@ -12,22 +12,24 @@ const FORCE_COLOR = ['0', 'false', ''].includes(/** @type {string} */ (process.e
 await Promise.all(
   pkg.workspaces.map((cwd, index) => {
     const name = cwd.split('/').pop()
-    const actor = run(cmd, {
-      cwd,
-      shell: true,
-      env: { ...process.env, FORCE_COLOR },
+    const actor = run(cmd, [], {
+      spawnOptions: {
+        cwd,
+        shell: true,
+        env: { ...process.env, FORCE_COLOR },
+      }
     })
-    if (!actor.stdout || !actor.stderr) {
+    if (!actor.process.stdout || !actor.process.stderr) {
       throw new Error(`No stdout or stderr for ${name} in ${cwd}`)
     }
     const color = `\x1b[${31 + (index % 6)}m`
     const reset = '\x1b[0m'
     const prefix = `${color}[${name}]${reset} `
 
-    createInterface({ input: actor.stdout }).on('line', (line) => {
+    createInterface({ input: actor.process.stdout }).on('line', (line) => {
       process.stdout.write(`${prefix}${line}\n`)
     })
-    createInterface({ input: actor.stderr }).on('line', (line) => {
+    createInterface({ input: actor.process.stderr }).on('line', (line) => {
       process.stderr.write(`${prefix}${line}\n`)
     })
 

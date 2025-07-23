@@ -50,7 +50,7 @@
     "test": "test"
   },
   "devDependencies": {
-    "execa": "^8.0.1",
+    "tinyexec": "^1.0.1",
     "tsup": "^8.0.0",
     "vitest": "^3.0.0"
   },

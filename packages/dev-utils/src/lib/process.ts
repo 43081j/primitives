@@ -1,16 +1,16 @@
 import { platform } from 'node:os'
 
-import type { ExecaChildProcess } from 'execa'
 import { satisfies } from 'semver'
+import type { ChildProcess } from 'node:child_process'
 
 // 1 second
 const SERVER_KILL_TIMEOUT = 1e3
 
 export interface ProcessRef {
-  ps?: ExecaChildProcess
+  ps?: ChildProcess
 }
 
-export const killProcess = (ps?: ExecaChildProcess) => {
+export const killProcess = (ps?: ChildProcess) => {
   // If the process is no longer running, there's nothing left to do.
   if (!ps || ps.exitCode !== null) {
     return
@@ -25,13 +25,14 @@ export const killProcess = (ps?: ExecaChildProcess) => {
     // On Windows with Node 21+, there's a bug where attempting to kill a child process
     // results in an EPERM error. Ignore the error in that case.
     // See: https://github.com/nodejs/node/issues/51766
-    // We also disable execa's `forceKillAfterTimeout` in this case
-    // which can cause unhandled rejection.
+    // We also avoid force-killing the process in this case.
     try {
-      ps.kill('SIGTERM', {
-        forceKillAfterTimeout:
-          platform() === 'win32' && satisfies(process.version, '>=21') ? false : SERVER_KILL_TIMEOUT,
-      })
+      const killed = ps.kill('SIGTERM');
+      if (!killed && (platform() !== 'win32' || !satisfies(process.version, '>=21'))) {
+        setTimeout(() => {
+          ps.kill('SIGKILL');
+        }, SERVER_KILL_TIMEOUT);
+      }
     } catch {
       // no-op
     }
